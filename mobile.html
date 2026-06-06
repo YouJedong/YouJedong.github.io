@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#c0392b">
+  <title>여행 플래너</title>
+  <link rel="stylesheet" href="./mobile.css">
+  <link rel="manifest" href="./manifest.json">
+</head>
+<body>
+
+  <!-- 헤더 -->
+  <header class="m-header">
+    <div class="m-header-left">
+      <span class="m-logo">🗾</span>
+      <input type="text" id="tripName" class="m-trip-name" placeholder="여행 이름">
+    </div>
+    <div class="m-header-right">
+      <input type="date" id="startDate" class="m-date-input">
+      <button class="m-icon-btn" id="btnManageTypes" title="타입 관리">⚙</button>
+      <button class="m-icon-btn" id="btnExport" title="내보내기">💾</button>
+      <button class="m-icon-btn" id="btnSaveServer" title="서버 저장">☁</button>
+      <label class="m-icon-btn" title="가져오기">
+        📂<input type="file" id="importFile" accept=".json" hidden>
+      </label>
+    </div>
+  </header>
+
+  <!-- 날짜 네비게이션 (일정 탭에서만 표시) -->
+  <div class="m-day-nav" id="dayNavBar">
+    <button class="m-day-arrow" id="btnPrevDay">‹</button>
+    <div class="m-day-label-wrap">
+      <span class="m-day-label" id="currentDayLabel">Day 1</span>
+      <div class="m-day-range-ctrl">
+        <input type="number" class="m-hour-input" id="mDayStart" min="0" max="23" value="0" title="시작 시각">
+        <span>~</span>
+        <input type="number" class="m-hour-input" id="mDayEnd" min="1" max="24" value="24" title="종료 시각">
+        <span>시</span>
+      </div>
+    </div>
+    <button class="m-day-arrow" id="btnNextDay">›</button>
+    <div class="m-day-counter">
+      <button class="m-day-count-btn" id="btnRemoveDay">−</button>
+      <span id="dayCountLabel">4일</span>
+      <button class="m-day-count-btn" id="btnAddDay">+</button>
+    </div>
+  </div>
+
+  <!-- 탭 콘텐츠 -->
+  <main class="m-content">
+
+    <!-- 일정 탭 -->
+    <div class="m-tab-pane" id="paneSchedule">
+      <div class="m-timeline-wrap" id="timelineContainer">
+        <!-- JS에서 생성 -->
+      </div>
+    </div>
+
+    <!-- 체크리스트 탭 -->
+    <div class="m-tab-pane m-tab-pane--hidden" id="paneChecklist">
+      <div class="m-list-top">
+        <div class="m-check-input-row">
+          <input type="text" id="newCheckItem" placeholder="항목 추가...">
+          <button id="btnAddCheck" class="m-add-inline-btn">+</button>
+        </div>
+      </div>
+      <ul class="m-checklist" id="checklistEl"></ul>
+    </div>
+
+    <!-- 정보 탭 -->
+    <div class="m-tab-pane m-tab-pane--hidden" id="paneInfo">
+      <div class="m-list-top">
+        <button id="btnAddInfo" class="m-add-btn">+ 정보 추가</button>
+      </div>
+      <ul class="m-info-list" id="infoListEl"></ul>
+    </div>
+
+  </main>
+
+  <!-- FAB -->
+  <button class="m-fab" id="fabBtn" aria-label="추가">＋</button>
+
+  <!-- 하단 탭바 -->
+  <nav class="m-tabbar">
+    <button class="m-tab-btn m-tab-btn--active" data-tab="schedule" id="tabBtnSchedule">
+      <span class="m-tab-icon">📅</span>
+      <span class="m-tab-label">일정</span>
+    </button>
+    <button class="m-tab-btn" data-tab="checklist" id="tabBtnChecklist">
+      <span class="m-tab-icon">✅</span>
+      <span class="m-tab-label">체크리스트</span>
+    </button>
+    <button class="m-tab-btn" data-tab="info" id="tabBtnInfo">
+      <span class="m-tab-icon">ℹ️</span>
+      <span class="m-tab-label">정보</span>
+    </button>
+  </nav>
+
+  <!-- ── 이벤트 바텀시트 ── -->
+  <div class="m-overlay m-overlay--hidden" id="eventModal">
+    <div class="m-sheet" id="eventSheet">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-header">
+        <span class="m-sheet-title" id="modalTitle">일정 추가</span>
+        <button class="m-sheet-close" id="btnCloseModal">×</button>
+      </div>
+      <div class="m-sheet-body">
+        <div class="m-form-row">
+          <label class="m-form-label">제목 *</label>
+          <input type="text" id="evtTitle" class="m-form-input" placeholder="예: 나리타 → 신주쿠역">
+        </div>
+        <div class="m-form-row">
+          <label class="m-form-label">종류</label>
+          <select id="evtType" class="m-form-input"></select>
+        </div>
+        <div class="m-form-row">
+          <label class="m-form-label">날짜</label>
+          <select id="evtDay" class="m-form-input"></select>
+        </div>
+        <div class="m-form-row m-form-row--split">
+          <div class="m-form-half">
+            <label class="m-form-label">시작</label>
+            <input type="time" id="evtStart" class="m-form-input">
+          </div>
+          <div class="m-form-half">
+            <label class="m-form-label">종료</label>
+            <input type="time" id="evtEnd" class="m-form-input">
+          </div>
+        </div>
+        <div class="m-form-row">
+          <label class="m-form-label">메모</label>
+          <textarea id="evtMemo" class="m-form-input m-form-textarea" rows="3" placeholder="메모 (선택)"></textarea>
+        </div>
+      </div>
+      <div class="m-sheet-footer">
+        <button class="m-btn-danger m-btn--hidden" id="btnDeleteEvent">삭제</button>
+        <button class="m-btn-primary" id="btnSaveEvent">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 정보 바텀시트 ── -->
+  <div class="m-overlay m-overlay--hidden" id="infoModal">
+    <div class="m-sheet" id="infoSheet">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-header">
+        <span class="m-sheet-title" id="infoModalTitle">정보 추가</span>
+        <button class="m-sheet-close" id="btnCloseInfo">×</button>
+      </div>
+      <div class="m-sheet-body">
+        <div class="m-form-row">
+          <label class="m-form-label">제목 *</label>
+          <input type="text" id="infoTitle" class="m-form-input" placeholder="예: 환전 정보">
+        </div>
+        <div class="m-form-row">
+          <label class="m-form-label">내용</label>
+          <textarea id="infoContent" class="m-form-input m-form-textarea" rows="6" placeholder="내용을 입력하세요..."></textarea>
+        </div>
+      </div>
+      <div class="m-sheet-footer">
+        <button class="m-btn-danger m-btn--hidden" id="btnDeleteInfo">삭제</button>
+        <button class="m-btn-primary" id="btnSaveInfo">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 타입 관리 바텀시트 ── -->
+  <div class="m-overlay m-overlay--hidden" id="typesModal">
+    <div class="m-sheet m-sheet--tall" id="typesSheet">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-header">
+        <span class="m-sheet-title">일정 종류 관리</span>
+        <button class="m-sheet-close" id="btnCloseTypes">×</button>
+      </div>
+      <div class="m-sheet-body">
+        <p class="m-sheet-hint">색상을 탭하면 변경할 수 있어요</p>
+        <div class="m-types-list" id="typesList"></div>
+        <div class="m-add-type-row">
+          <input type="color" id="newTypeColor" value="#4A90D9" title="색상 선택">
+          <input type="text" id="newTypeEmoji" class="m-emoji-input" placeholder="😀" title="이모지">
+          <input type="text" id="newTypeName" class="m-type-name-input" placeholder="종류 이름">
+          <button class="m-btn-primary" id="btnAddType">추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app-core.js"></script>
+  <script src="./app-mobile.js"></script>
+</body>
+</html>
